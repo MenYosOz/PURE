@@ -113,6 +113,7 @@ def setseed(seed):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
