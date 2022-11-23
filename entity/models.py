@@ -11,6 +11,7 @@ import numpy as np
 
 from transformers import BertTokenizer, BertPreTrainedModel, BertModel
 from transformers import AlbertTokenizer, AlbertPreTrainedModel, AlbertModel
+from transformers import AutoTokenizer, AutoModel, AutoModelForSeq2SeqLM
 
 import os
 import json
@@ -166,9 +167,18 @@ class EntityModel():
             vocab_name = bert_model_name
             logger.info('Loading BERT model from {}'.format(bert_model_name))
 
-        if args.use_albert:
+        if vocab_name == "michiyasunaga/BioLinkBERT-large":
+            self.tokenizer = AutoTokenizer.from_pretrained(vocab_name)
+            self.bert_model = AutoModel.from_pretrained(bert_model_name)
+
+        elif vocab_name == "razent/SciFive-large-Pubmed_PMC":
+            self.tokenizer = AutoTokenizer.from_pretrained(vocab_name)
+            self.bert_model = AutoModelForSeq2SeqLM.from_pretrained(bert_model_name)
+
+        elif args.use_albert:
             self.tokenizer = AlbertTokenizer.from_pretrained(vocab_name)
             self.bert_model = AlbertForEntity.from_pretrained(bert_model_name, num_ner_labels=num_ner_labels, max_span_length=args.max_span_length)
+
         else:
             self.tokenizer = BertTokenizer.from_pretrained(vocab_name)
             self.bert_model = BertForEntity.from_pretrained(bert_model_name, num_ner_labels=num_ner_labels, max_span_length=args.max_span_length)
