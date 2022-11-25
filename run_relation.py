@@ -9,6 +9,8 @@ import random
 import time
 import json
 import sys
+import wandb
+import string
 
 import numpy as np
 import torch
@@ -55,7 +57,7 @@ def add_marker_tokens(tokenizer, ner_labels):
         new_tokens.append('<SUBJ=%s>'%label)
         new_tokens.append('<OBJ=%s>'%label)
     tokenizer.add_tokens(new_tokens)
-    logger.info('# vocab after adding markers: %d'%len(tokenizer))
+    print('# vocab after adding markers: %d'%len(tokenizer))
 
 def convert_examples_to_features(examples, label2id, max_seq_length, tokenizer, special_tokens, unused_tokens=True):
     """
@@ -78,7 +80,7 @@ def convert_examples_to_features(examples, label2id, max_seq_length, tokenizer, 
     features = []
     for (ex_index, example) in enumerate(examples):
         if ex_index % 10000 == 0:
-            logger.info("Writing example %d of %d" % (ex_index, len(examples)))
+            print("Writing example %d of %d" % (ex_index, len(examples)))
 
         tokens = [CLS]
         SUBJECT_START = get_special_token("SUBJ_START")
@@ -135,15 +137,15 @@ def convert_examples_to_features(examples, label2id, max_seq_length, tokenizer, 
         if num_shown_examples < 20:
             if (ex_index < 5) or (label_id > 0):
                 num_shown_examples += 1
-                logger.info("*** Example ***")
-                logger.info("guid: %s" % (example['id']))
-                logger.info("tokens: %s" % " ".join(
+                print("*** Example ***")
+                print("guid: %s" % (example['id']))
+                print("tokens: %s" % " ".join(
                         [str(x) for x in tokens]))
-                logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
-                logger.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
-                logger.info("segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
-                logger.info("label: %s (id = %d)" % (example['relation'], label_id))
-                logger.info("sub_idx, obj_idx: %d, %d" % (sub_idx, obj_idx))
+                print("input_ids: %s" % " ".join([str(x) for x in input_ids]))
+                print("input_mask: %s" % " ".join([str(x) for x in input_mask]))
+                print("segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
+                print("label: %s (id = %d)" % (example['relation'], label_id))
+                print("sub_idx, obj_idx: %d, %d" % (sub_idx, obj_idx))
 
         features.append(
                 InputFeatures(input_ids=input_ids,
@@ -152,9 +154,9 @@ def convert_examples_to_features(examples, label2id, max_seq_length, tokenizer, 
                               label_id=label_id,
                               sub_idx=sub_idx,
                               obj_idx=obj_idx))
-    logger.info("Average #tokens: %.2f" % (num_tokens * 1.0 / len(examples)))
-    logger.info("Max #tokens: %d"%max_tokens)
-    logger.info("%d (%.2f %%) examples can fit max_seq_length = %d" % (num_fit_examples,
+    print("Average #tokens: %.2f" % (num_tokens * 1.0 / len(examples)))
+    print("Max #tokens: %d"%max_tokens)
+    print("%d (%.2f %%) examples can fit max_seq_length = %d" % (num_fit_examples,
                 num_fit_examples * 100.0 / len(examples), max_seq_length))
     return features
 
@@ -220,9 +222,9 @@ def evaluate(model, device, eval_dataloader, eval_label_ids, num_labels, e2e_ngo
     result['accuracy'] = simple_accuracy(preds, eval_label_ids.numpy())
     result['eval_loss'] = eval_loss
     if verbose:
-        logger.info("***** Eval results *****")
+        print("***** Eval results *****")
         for key in sorted(result.keys()):
-            logger.info("  %s = %s", key, str(result[key]))
+            print("  %s = %s", key, str(result[key]))
     return preds, result, logits
 
 def print_pred_json(eval_data, eval_examples, preds, id2label, output_file):
@@ -241,7 +243,7 @@ def print_pred_json(eval_data, eval_examples, preds, id2label, output_file):
             k = '%s@%d'%(doc['doc_key'], sid)
             doc['predicted_relations'].append(rels.get(k, []))
     
-    logger.info('Output predictions to %s..'%(output_file))
+    print('Output predictions to %s..'%(output_file))
     with open(output_file, 'w') as f:
         f.write('\n'.join(json.dumps(doc) for doc in js))
 
@@ -255,7 +257,7 @@ def setseed(seed):
 def save_trained_model(output_dir, model, tokenizer):
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
-    logger.info('Saving model to %s'%output_dir)
+    print('Saving model to %s'%output_dir)
     model_to_save = model.module if hasattr(model, 'module') else model
     output_model_file = os.path.join(output_dir, WEIGHTS_NAME)
     output_config_file = os.path.join(output_dir, CONFIG_NAME)
@@ -263,7 +265,12 @@ def save_trained_model(output_dir, model, tokenizer):
     model_to_save.config.to_json_file(output_config_file)
     tokenizer.save_vocabulary(output_dir)
 
+
 def main(args):
+    random_string = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(10))
+    wandb.init(project=args.project)
+    wandb.config.update(args)
+    wandb.config.identifier = random_string
     if 'albert' in args.model:
         RelationModel = AlbertForRelation
         args.add_new_tokens = True
@@ -296,7 +303,7 @@ def main(args):
         logger.addHandler(logging.FileHandler(os.path.join(args.output_dir, "eval.log"), 'w'))
     logger.info(sys.argv)
     logger.info(args)
-    logger.info("device: {}, n_gpu: {}".format(
+    print("device: {}, n_gpu: {}".format(
         device, n_gpu))
 
     # get label_list
@@ -324,9 +331,9 @@ def main(args):
     if args.do_eval and (args.do_train or not(args.eval_test)):
         eval_features = convert_examples_to_features(
             eval_examples, label2id, args.max_seq_length, tokenizer, special_tokens, unused_tokens=not(args.add_new_tokens))
-        logger.info("***** Dev *****")
-        logger.info("  Num examples = %d", len(eval_examples))
-        logger.info("  Batch size = %d", args.eval_batch_size)
+        print("***** Dev *****")
+        print("  Num examples = %d", len(eval_examples))
+        print("  Batch size = %d", args.eval_batch_size)
         all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
@@ -358,10 +365,10 @@ def main(args):
 
         num_train_optimization_steps = len(train_dataloader) * args.num_train_epochs
 
-        logger.info("***** Training *****")
-        logger.info("  Num examples = %d", len(train_examples))
-        logger.info("  Batch size = %d", args.train_batch_size)
-        logger.info("  Num steps = %d", num_train_optimization_steps)
+        print("***** Training *****")
+        print("  Num examples = %d", len(train_examples))
+        print("  Batch size = %d", args.train_batch_size)
+        print("  Num steps = %d", num_train_optimization_steps)
 
         best_result = None
         eval_step = max(1, len(train_batches) // args.eval_per_epoch)
@@ -398,7 +405,7 @@ def main(args):
         nb_tr_steps = 0
         for epoch in range(int(args.num_train_epochs)):
             model.train()
-            logger.info("Start epoch #{} (lr = {})...".format(epoch, lr))
+            print("Start epoch #{} (lr = {})...".format(epoch, lr))
             if args.train_mode == 'random' or args.train_mode == 'random_sorted':
                 random.shuffle(train_batches)
             for step, batch in enumerate(train_batches):
@@ -420,7 +427,7 @@ def main(args):
                 global_step += 1
 
                 if (step + 1) % eval_step == 0:
-                    logger.info('Epoch: {}, Step: {} / {}, used_time = {:.2f}s, loss = {:.6f}'.format(
+                    print('Epoch: {}, Step: {} / {}, used_time = {:.2f}s, loss = {:.6f}'.format(
                                 epoch, step + 1, len(train_batches),
                                 time.time() - start_time, tr_loss / nb_tr_steps))
                     save_model = False
@@ -434,7 +441,7 @@ def main(args):
 
                         if (best_result is None) or (result[args.eval_metric] > best_result[args.eval_metric]):
                             best_result = result
-                            logger.info("!!! Best dev %s (lr=%s, epoch=%d): %.2f" %
+                            print("!!! Best dev %s (lr=%s, epoch=%d): %.2f" %
                                         (args.eval_metric, str(lr), epoch, result[args.eval_metric] * 100.0))
                             save_trained_model(args.output_dir, model, tokenizer)
 
@@ -448,9 +455,9 @@ def main(args):
                 test_examples, label2id, args.max_seq_length, tokenizer, special_tokens, unused_tokens=not(args.add_new_tokens))
             eval_nrel = test_nrel
             logger.info(special_tokens)
-            logger.info("***** Test *****")
-            logger.info("  Num examples = %d", len(test_examples))
-            logger.info("  Batch size = %d", args.eval_batch_size)
+            print("***** Test *****")
+            print("  Num examples = %d", len(test_examples))
+            print("  Batch size = %d", args.eval_batch_size)
             all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
             all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
             all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
@@ -464,11 +471,12 @@ def main(args):
         model.to(device)
         preds, result, logits = evaluate(model, device, eval_dataloader, eval_label_ids, num_labels, e2e_ngold=eval_nrel)
 
-        logger.info('*** Evaluation Results ***')
+        print('*** Evaluation Results ***')
         for key in sorted(result.keys()):
-            logger.info("  %s = %s", key, str(result[key]))
+            print("  %s = %s", key, str(result[key]))
 
         print_pred_json(eval_dataset, eval_examples, preds, id2label, os.path.join(args.output_dir, args.prediction_file))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -518,6 +526,8 @@ if __name__ == "__main__":
 
     parser.add_argument('--add_new_tokens', action='store_true', 
                         help="Whether to add new tokens as marker tokens instead of using [unusedX] tokens.")
+    parser.add_argument("--project", type=str, required=True, help="project name for wandb")
+
 
     args = parser.parse_args()
     main(args)
