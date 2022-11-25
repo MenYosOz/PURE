@@ -5,6 +5,8 @@ import sys
 import random
 import logging
 import time
+import wandb
+
 from tqdm import tqdm
 import numpy as np
 
@@ -104,8 +106,9 @@ def evaluate(model, batches, tot_gold):
     r = cor / tot_gold if cor > 0 else 0.0
     f1 = 2 * (p * r) / (p + r) if cor > 0 else 0.0
     logger.info('P: %.5f, R: %.5f, F1: %.5f'%(p, r, f1))
-    logger.info('Used time: %f'%(time.time()-c_time))
-    return f1
+    used_time = time.time()-c_time
+    logger.info('Used time: %f'%(time.time()-used_time))
+    return f1, acc, p, r, cor, tot_pred, tot_gold, used_time
 
 def setseed(seed):
     random.seed(seed)
@@ -166,14 +169,20 @@ if __name__ == '__main__':
 
     parser.add_argument('--context_window', type=int, required=True, default=None, 
                         help="the context window size W for the entity model")
+    parser.add_argument("--project", type=str, required=True, help="project name for wandb")
 
     args = parser.parse_args()
     args.train_data = os.path.join(args.data_dir, 'train.json')
     args.dev_data = os.path.join(args.data_dir, 'dev.json')
     args.test_data = os.path.join(args.data_dir, 'test.json')
 
+    random_string = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(10))
+    wandb.init(project=args.project)
+    wandb.config.update(args)
+    wandb.config.identifier = random_string
+
     if 'albert' in args.model:
-        logger.info('Use Albert: %s'%args.model)
+        wandb.info('Use Albert: %s'%args.model)
         args.use_albert = True
 
     setseed(args.seed)
@@ -236,14 +245,18 @@ if __name__ == '__main__':
 
                 if global_step % args.print_loss_step == 0:
                     logger.info('Epoch=%d, iter=%d, loss=%.5f'%(_, i, tr_loss / tr_examples))
+                    wandb.log({"Epoch": _, iter: i, "loss": (tr_loss / tr_examples)}, step=global_step)
                     tr_loss = 0
                     tr_examples = 0
 
                 if global_step % eval_step == 0:
-                    f1 = evaluate(model, dev_batches, dev_ner)
+                    f1, acc, p, r, cor, tot_pred, tot_gold, used_time = evaluate(model, dev_batches, dev_ner)
                     if f1 > best_result:
                         best_result = f1
                         logger.info('!!! Best valid (epoch=%d): %.2f' % (_, f1*100))
+                        wandb.log({"Best_valid_f1": f1*100, "accuracy": acc, "precision": p,
+                                   "recall": r, "cor": cor, "tot_pred": tot_pred, "tot_gold": tot_gold,
+                                   "Epoch": _, "used_time": used_time}, step=global_step)
                         save_model(model, args)
 
     if args.do_eval:
