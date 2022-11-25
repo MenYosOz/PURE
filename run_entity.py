@@ -246,7 +246,7 @@ if __name__ == '__main__':
 
                 if global_step % args.print_loss_step == 0:
                     logger.info('Epoch=%d, iter=%d, loss=%.5f'%(_, i, tr_loss / tr_examples))
-                    wandb.log({"Epoch": _, iter: i, "loss": (tr_loss / tr_examples)}, step=global_step)
+                    wandb.log({"Epoch": _, "iter": i, "loss": (tr_loss / tr_examples)}, step=global_step)
                     tr_loss = 0
                     tr_examples = 0
 
