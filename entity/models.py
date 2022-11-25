@@ -168,8 +168,8 @@ class EntityModel():
             logger.info('Loading BERT model from {}'.format(bert_model_name))
 
         if vocab_name == "michiyasunaga/BioLinkBERT-large":
-            self.tokenizer = AutoTokenizer.from_pretrained(vocab_name)
-            self.bert_model = AutoModel.from_pretrained(bert_model_name)
+            self.tokenizer = BertTokenizer.from_pretrained(vocab_name)
+            self.bert_model = BertForEntity.from_pretrained(bert_model_name, num_ner_labels=num_ner_labels, max_span_length=args.max_span_length)
 
         elif vocab_name == "razent/SciFive-large-Pubmed_PMC":
             self.tokenizer = AutoTokenizer.from_pretrained(vocab_name)
