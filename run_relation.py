@@ -305,7 +305,7 @@ def main(args):
     logger.info(args)
     print("device: {}, n_gpu: {}".format(
         device, n_gpu))
-    wandb.log({"device": device, "n_gpu": n_gpu})
+    wandb.log({"device": str(device), "n_gpu": n_gpu})
 
     # get label_list
     if os.path.exists(os.path.join(args.output_dir, 'label_list.json')):
