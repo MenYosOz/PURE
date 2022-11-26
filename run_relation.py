@@ -305,6 +305,7 @@ def main(args):
     logger.info(args)
     print("device: {}, n_gpu: {}".format(
         device, n_gpu))
+    wandb.log({"device": device, "n_gpu": n_gpu})
 
     # get label_list
     if os.path.exists(os.path.join(args.output_dir, 'label_list.json')):
@@ -406,6 +407,7 @@ def main(args):
         for epoch in range(int(args.num_train_epochs)):
             model.train()
             print("Start epoch #{} (lr = {})...".format(epoch, lr))
+            wandb.log({"Epoch": epoch, "lr": lr}, step=global_step)
             if args.train_mode == 'random' or args.train_mode == 'random_sorted':
                 random.shuffle(train_batches)
             for step, batch in enumerate(train_batches):
@@ -430,19 +432,22 @@ def main(args):
                     print('Epoch: {}, Step: {} / {}, used_time = {:.2f}s, loss = {:.6f}'.format(
                                 epoch, step + 1, len(train_batches),
                                 time.time() - start_time, tr_loss / nb_tr_steps))
+                    wandb.log({"Epoch": epoch, "local_step": step + 1, "len_batch": len(train_batches), "used_time": time.time() - start_time, "loss": tr_loss / nb_tr_steps}, step=global_step)
                     save_model = False
                     if args.do_eval:
                         preds, result, logits = evaluate(model, device, eval_dataloader, eval_label_ids, num_labels, e2e_ngold=eval_nrel)
                         model.train()
                         result['global_step'] = global_step
-                        result['epoch'] = epoch
-                        result['learning_rate'] = lr
+                        result['Epoch'] = epoch
+                        result['lr'] = lr
                         result['batch_size'] = args.train_batch_size
 
                         if (best_result is None) or (result[args.eval_metric] > best_result[args.eval_metric]):
                             best_result = result
                             print("!!! Best dev %s (lr=%s, epoch=%d): %.2f" %
                                         (args.eval_metric, str(lr), epoch, result[args.eval_metric] * 100.0))
+                            log_best_result = dict([(k+"_dev", v) for k, v in best_result.items()])
+                            wandb.log({log_best_result}, step=global_step)
                             save_trained_model(args.output_dir, model, tokenizer)
 
     evaluation_results = {}
@@ -474,7 +479,8 @@ def main(args):
         print('*** Evaluation Results ***')
         for key in sorted(result.keys()):
             print("  %s = %s", key, str(result[key]))
-
+        log_eval_result = dict([(k + "_eval_result", v) for k, v in result.items()])
+        wandb.log({log_eval_result})
         print_pred_json(eval_dataset, eval_examples, preds, id2label, os.path.join(args.output_dir, args.prediction_file))
 
 
