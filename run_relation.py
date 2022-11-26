@@ -305,7 +305,7 @@ def main(args):
     logger.info(args)
     print("device: {}, n_gpu: {}".format(
         device, n_gpu))
-    wandb.log({"device": str(device), "n_gpu": n_gpu})
+    wandb.log({"device_type": str(device), "n_gpu": n_gpu})
 
     # get label_list
     if os.path.exists(os.path.join(args.output_dir, 'label_list.json')):
@@ -447,7 +447,7 @@ def main(args):
                             print("!!! Best dev %s (lr=%s, epoch=%d): %.2f" %
                                         (args.eval_metric, str(lr), epoch, result[args.eval_metric] * 100.0))
                             log_best_result = dict([(k+"_dev", v) for k, v in best_result.items()])
-                            wandb.log({log_best_result}, step=global_step)
+                            wandb.log(log_best_result, step=global_step)
                             save_trained_model(args.output_dir, model, tokenizer)
 
     evaluation_results = {}
@@ -480,7 +480,7 @@ def main(args):
         for key in sorted(result.keys()):
             print("  %s = %s", key, str(result[key]))
         log_eval_result = dict([(k + "_eval_result", v) for k, v in result.items()])
-        wandb.log({log_eval_result})
+        wandb.log(log_eval_result)
         print_pred_json(eval_dataset, eval_examples, preds, id2label, os.path.join(args.output_dir, args.prediction_file))
 
 
