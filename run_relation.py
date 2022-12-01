@@ -527,7 +527,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--prediction_file", type=str, default="predictions.json", help="The prediction filename for the relation model")
 
-    parser.add_argument('--task', type=str, default=None, required=True, choices=['ace04', 'ace05', 'scierc', 'coarse'])
+    parser.add_argument('--task', type=str, default=None, required=True, choices=['ace04', 'ace05', 'scierc', 'coarse',
+                                                                                  'granular'])
     parser.add_argument('--context_window', type=int, default=0)
 
     parser.add_argument('--add_new_tokens', action='store_true', 
