@@ -3,7 +3,7 @@ task_ner_labels = {
     'ace05': ['FAC', 'WEA', 'LOC', 'VEH', 'GPE', 'ORG', 'PER'],
     'scierc': ['Method', 'OtherScientificTerm', 'Task', 'Generic', 'Material', 'Metric'],
     'coarse': ['ENTITY'],
-    'granular': ['ENTITY']
+    'granular': ['ENTITY', "PREDICATE"]
 }
 
 task_rel_labels = {
