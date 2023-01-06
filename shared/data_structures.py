@@ -469,7 +469,7 @@ def analyze_relation_coverage(dataset):
                 if (r.pair[0] in top) and (r.pair[1] in top) and (r.pair[2] in top):
                     nrel_top_cover += 1
                 
-                if overlap(r.pair[0], r.pair[1], r.pair[1]):
+                if overlap(r.pair[0], r.pair[1], r.pair[2]):
                     nrel_overlap += 1
 
     print('Coverage by predicted entities: %.3f (%d / %d), #candidates: %d'%(nrel_pred_cover/nrel_gold*100.0, nrel_pred_cover, nrel_gold, npair_pred))
