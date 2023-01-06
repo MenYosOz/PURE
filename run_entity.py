@@ -28,7 +28,7 @@ def save_model(model, args):
     """
     Save the model to the output directory
     """
-    print('Saving model to %s...'%(args.output_dir))
+    logger.info('Saving model to %s...'%(args.output_dir))
     model_to_save = model.bert_model.module if hasattr(model.bert_model, 'module') else model.bert_model
     model_to_save.save_pretrained(args.output_dir)
     model.tokenizer.save_pretrained(args.output_dir)
@@ -54,7 +54,7 @@ def output_ner_predictions(model, batches, dataset, output_file):
                 ner_result[k].append([span[0]+off, span[1]+off, ner_id2label[pred]])
             tot_pred_ett += len(ner_result[k])
 
-    print('Total pred entities: %d'%tot_pred_ett)
+    logger.info('Total pred entities: %d'%tot_pred_ett)
 
     js = dataset.js
     for i, doc in enumerate(js):
@@ -65,14 +65,14 @@ def output_ner_predictions(model, batches, dataset, output_file):
             if k in ner_result:
                 doc["predicted_ner"].append(ner_result[k])
             else:
-                print('%s not in NER results!'%k)
+                logger.info('%s not in NER results!'%k)
                 doc["predicted_ner"].append([])
             
             doc["predicted_relations"].append([])
 
         js[i] = doc
 
-    print('Output predictions to %s..'%(output_file))
+    logger.info('Output predictions to %s..'%(output_file))
     with open(output_file, 'w') as f:
         f.write('\n'.join(json.dumps(doc, cls=NpEncoder) for doc in js))
 
@@ -80,7 +80,7 @@ def evaluate(model, batches, tot_gold):
     """
     Evaluate the entity model
     """
-    print('Evaluating...')
+    logger.info('Evaluating...')
     c_time = time.time()
     cor = 0
     tot_pred = 0
@@ -101,14 +101,14 @@ def evaluate(model, batches, tot_gold):
                     tot_pred += 1
                    
     acc = l_cor / l_tot
-    print('Accuracy: %5f'%acc)
-    print('Cor: %d, Pred TOT: %d, Gold TOT: %d'%(cor, tot_pred, tot_gold))
+    logger.info('Accuracy: %5f'%acc)
+    logger.info('Cor: %d, Pred TOT: %d, Gold TOT: %d'%(cor, tot_pred, tot_gold))
     p = cor / tot_pred if cor > 0 else 0.0
     r = cor / tot_gold if cor > 0 else 0.0
     f1 = 2 * (p * r) / (p + r) if cor > 0 else 0.0
-    print('P: %.5f, R: %.5f, F1: %.5f'%(p, r, f1))
+    logger.info('P: %.5f, R: %.5f, F1: %.5f'%(p, r, f1))
     used_time = time.time()-c_time
-    print('Used time: %f'%(time.time()-used_time))
+    logger.info('Used time: %f'%(time.time()-used_time))
     return f1, acc, p, r, cor, tot_pred, tot_gold, used_time
 
 def setseed(seed):
@@ -192,13 +192,13 @@ if __name__ == '__main__':
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
-    # if args.do_train:
-    #     logger.addHandler(logging.FileHandler(os.path.join(args.output_dir, "train.log"), 'w'))
-    # else:
-    #     logger.addHandler(logging.FileHandler(os.path.join(args.output_dir, "eval.log"), 'w'))
+    if args.do_train:
+        logger.addHandler(logging.FileHandler(os.path.join(args.output_dir, "train.log"), 'w'))
+    else:
+        logger.addHandler(logging.FileHandler(os.path.join(args.output_dir, "eval.log"), 'w'))
 
-    print(sys.argv)
-    print(args)
+    logger.info(sys.argv)
+    logger.info(args)
     
     ner_label2id, ner_id2label = get_labelmap(task_ner_labels[args.task])
     
@@ -246,7 +246,7 @@ if __name__ == '__main__':
                 optimizer.zero_grad()
 
                 if global_step % args.print_loss_step == 0:
-                    print('Epoch=%d, iter=%d, loss=%.5f'%(_, i, tr_loss / tr_examples))
+                    logger.info('Epoch=%d, iter=%d, loss=%.5f'%(_, i, tr_loss / tr_examples))
                     wandb.log({"Epoch": _, "iter": i, "loss": (tr_loss / tr_examples)}, step=global_step)
                     tr_loss = 0
                     tr_examples = 0
@@ -255,7 +255,7 @@ if __name__ == '__main__':
                     f1, acc, p, r, cor, tot_pred, tot_gold, used_time = evaluate(model, dev_batches, dev_ner)
                     if f1 > best_result:
                         best_result = f1
-                        print('!!! Best valid (epoch=%d): %.2f' % (_, f1*100))
+                        logger.info('!!! Best valid (epoch=%d): %.2f' % (_, f1*100))
                         wandb.log({"Best_valid_f1": f1*100, "accuracy": acc, "precision": p,
                                    "recall": r, "cor": cor, "tot_pred": tot_pred, "tot_gold": tot_gold,
                                    "Epoch": _, "used_time": used_time}, step=global_step)
