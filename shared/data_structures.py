@@ -255,14 +255,16 @@ class Relation:
     def __init__(self, relation, text, sentence_start):
         start1, end1 = relation[0], relation[1]
         start2, end2 = relation[2], relation[3]
-        label = relation[4]
+        start3, end3 = relation[4], relation[5]
+        label = relation[6]
         span1 = Span(start1, end1, text, sentence_start)
         span2 = Span(start2, end2, text, sentence_start)
-        self.pair = (span1, span2)
+        span3 = Span(start3, end3, text, sentence_start)
+        self.pair = (span1, span2, span3)
         self.label = label
 
     def __repr__(self):
-        return self.pair[0].__repr__() + ", " + self.pair[1].__repr__() + ": " + self.label
+        return self.pair[0].__repr__() + ", " + self.pair[1].__repr__() + ", " + self.pair[2].__repr__() + ": " + self.label
 
     def __eq__(self, other):
         return (self.pair == other.pair) and (self.label == other.label)
@@ -278,8 +280,9 @@ class AtomicRelation:
     def from_relation(cls, relation):
         ent0 = " ".join(relation.pair[0].text)
         ent1 = " ".join(relation.pair[1].text)
+        ent2 = " ".join(relation.pair[2].text)
         label = relation.label
-        return cls(ent0, ent1, label)
+        return cls(ent0, ent1, ent2, label)
 
     def __repr__(self):
         return f"({self.ent0} | {self.ent1} | {self.label})"
@@ -412,7 +415,8 @@ def evaluate_sent(sent, counts):
     for prediction in sent.predicted_relations:
         if any([prediction == actual for actual in sent.relations]):
             counts["relations_matched"] += 1
-            if (prediction.pair[0] in correct_ner) and (prediction.pair[1] in correct_ner):
+            if (prediction.pair[0] in correct_ner) and (prediction.pair[1] in correct_ner) and\
+                    (prediction.pair[2] in correct_ner):
                 counts["strict_relations_matched"] += 1
 
     # Return the updated counts.
@@ -460,12 +464,12 @@ def analyze_relation_coverage(dataset):
             npair_top += len(s.top_spans) * (len(s.top_spans) - 1)
             for r in s.relations:
                 nrel_gold += 1
-                if (r.pair[0] in pred) and (r.pair[1] in pred):
+                if (r.pair[0] in pred) and (r.pair[1] in pred) and (r.pair[2] in pred):
                     nrel_pred_cover += 1
-                if (r.pair[0] in top) and (r.pair[1] in top):
+                if (r.pair[0] in top) and (r.pair[1] in top) and (r.pair[2] in top):
                     nrel_top_cover += 1
                 
-                if overlap(r.pair[0], r.pair[1]):
+                if overlap(r.pair[0], r.pair[1], r.pair[1]):
                     nrel_overlap += 1
 
     print('Coverage by predicted entities: %.3f (%d / %d), #candidates: %d'%(nrel_pred_cover/nrel_gold*100.0, nrel_pred_cover, nrel_gold, npair_pred))
