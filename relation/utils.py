@@ -71,29 +71,34 @@ def generate_relation_data(entity_data, use_gold=False, context_window=0):
                     tokens = tokens + context_to_add
                     add_right -= len(context_to_add)
                     j += 1
-            
+
             for x in range(len(sent_ner)):
                 for y in range(len(sent_ner)):
-                    if x == y:
-                        continue
-                    sub = sent_ner[x]
-                    obj = sent_ner[y]
-                    label = gold_rel.get((sub.span, obj.span), 'no_relation')
-                    sample = {}
-                    sample['docid'] = doc._doc_key
-                    sample['id'] = '%s@%d::(%d,%d)-(%d,%d)'%(doc._doc_key, sent.sentence_ix, sub.span.start_doc, sub.span.end_doc, obj.span.start_doc, obj.span.end_doc)
-                    sample['relation'] = label
-                    sample['subj_start'] = sub.span.start_sent + sent_start
-                    sample['subj_end'] = sub.span.end_sent + sent_start
-                    sample['subj_type'] = sub.label
-                    sample['obj_start'] = obj.span.start_sent + sent_start
-                    sample['obj_end'] = obj.span.end_sent + sent_start
-                    sample['obj_type'] = obj.label
-                    sample['token'] = tokens
-                    sample['sent_start'] = sent_start
-                    sample['sent_end'] = sent_end
+                    for z in range(len(sent_ner)):
+                        if x == y or y == z or x == z:
+                            continue
+                        sub = sent_ner[x]
+                        obj = sent_ner[y]
+                        predicate = sent_ner[z]
+                        label = gold_rel.get((sub.span, predicate.span, obj.span), 'no_relation')
+                        sample = {}
+                        sample['docid'] = doc._doc_key
+                        sample['id'] = '%s@%d::(%d,%d)-(%d,%d)'%(doc._doc_key, sent.sentence_ix, sub.span.start_doc, sub.span.end_doc, obj.span.start_doc, obj.span.end_doc)
+                        sample['relation'] = label
+                        sample['subj_start'] = sub.span.start_sent + sent_start
+                        sample['subj_end'] = sub.span.end_sent + sent_start
+                        sample['subj_type'] = sub.label
+                        sample['predicate_start'] = predicate.span.start_sent + sent_start
+                        sample['predicate_end'] = predicate.span.end_sent + sent_start
+                        sample['predicate_type'] = predicate.label
+                        sample['obj_start'] = obj.span.start_sent + sent_start
+                        sample['obj_end'] = obj.span.end_sent + sent_start
+                        sample['obj_type'] = obj.label
+                        sample['token'] = tokens
+                        sample['sent_start'] = sent_start
+                        sample['sent_end'] = sent_end
 
-                    sent_samples.append(sample)
+                        sent_samples.append(sample)
 
             max_sentsample = max(max_sentsample, len(sent_samples))
             samples += sent_samples
