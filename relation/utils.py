@@ -15,8 +15,9 @@ def decode_sample_id(sample_id):
     pair = pair.split('-')
     sub = (int(pair[0][1:-1].split(',')[0]), int(pair[0][1:-1].split(',')[1]))
     obj = (int(pair[1][1:-1].split(',')[0]), int(pair[1][1:-1].split(',')[1]))
+    pred = (int(pair[2][1:-1].split(',')[0]), int(pair[2][1:-1].split(',')[1]))
 
-    return doc_sent, sub, obj
+    return doc_sent, sub, obj, pred
 
 def generate_relation_data(entity_data, use_gold=False, context_window=0):
     """
@@ -83,7 +84,9 @@ def generate_relation_data(entity_data, use_gold=False, context_window=0):
                         label = gold_rel.get((sub.span, predicate.span, obj.span), 'no_relation')
                         sample = {}
                         sample['docid'] = doc._doc_key
-                        sample['id'] = '%s@%d::(%d,%d)-(%d,%d)'%(doc._doc_key, sent.sentence_ix, sub.span.start_doc, sub.span.end_doc, obj.span.start_doc, obj.span.end_doc)
+                        sample['id'] = '%s@%d::(%d,%d)-(%d,%d)-(%d,%d)'%(doc._doc_key, sent.sentence_ix, sub.span.start_doc,
+                                                                         sub.span.end_doc, obj.span.start_doc, obj.span.end_doc,
+                                                                         predicate.span.start_doc, predicate.span.end_doc)
                         sample['relation'] = label
                         sample['subj_start'] = sub.span.start_sent + sent_start
                         sample['subj_end'] = sub.span.end_sent + sent_start
