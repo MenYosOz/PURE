@@ -16,8 +16,8 @@ class BertForRelation(BertPreTrainedModel):
         self.num_labels = num_rel_labels
         self.bert = BertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.layer_norm = BertLayerNorm(config.hidden_size * 2)
-        self.classifier = nn.Linear(config.hidden_size * 2, self.num_labels)
+        self.layer_norm = BertLayerNorm(config.hidden_size * 3)
+        self.classifier = nn.Linear(config.hidden_size * 3, self.num_labels)
         self.init_weights()
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None, sub_idx=None, obj_idx=None, pred_idx=None, input_position=None):
