@@ -250,11 +250,11 @@ def evaluate(model, device, eval_dataloader, eval_label_ids, num_labels, e2e_ngo
 def print_pred_json(eval_data, eval_examples, preds, id2label, output_file):
     rels = dict()
     for ex, pred in zip(eval_examples, preds):
-        doc_sent, sub, obj, pred = decode_sample_id(ex['id'])
+        doc_sent, sub, obj, pred_ = decode_sample_id(ex['id'])
         if doc_sent not in rels:
             rels[doc_sent] = []
         if pred != 0:
-            rels[doc_sent].append([sub[0], sub[1], pred[0], pred[1], obj[0], obj[1], id2label[pred]])
+            rels[doc_sent].append([sub[0], sub[1], pred_[0], pred_[1], obj[0], obj[1], id2label[pred]])
 
     js = eval_data.js
     for doc in js:
