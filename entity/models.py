@@ -31,7 +31,7 @@ class BertForEntity(BertPreTrainedModel):
             FeedForward(input_dim=config.hidden_size*2+width_embedding_dim, 
                         num_layers=2,
                         hidden_dims=head_hidden_dim,
-                        activations=F.relu,
+                        activations=nn.ReLU(),
                         dropout=0.2),
             nn.Linear(head_hidden_dim, num_ner_labels)
         )
@@ -98,7 +98,7 @@ class AlbertForEntity(AlbertPreTrainedModel):
             FeedForward(input_dim=config.hidden_size*2+width_embedding_dim, 
                         num_layers=2,
                         hidden_dims=head_hidden_dim,
-                        activations=F.relu,
+                        activations=nn.ReLU(),
                         dropout=0.2),
             nn.Linear(head_hidden_dim, num_ner_labels)
         )
@@ -163,8 +163,8 @@ class EntityModel():
         
         if args.bert_model_dir is not None:
             bert_model_name = str(args.bert_model_dir) + '/'
-            # vocab_name = bert_model_name + 'vocab.txt'
-            vocab_name = bert_model_name
+            vocab_name = bert_model_name + 'vocab.txt'
+            # vocab_name = bert_model_name
             logger.info('Loading BERT model from {}'.format(bert_model_name))
 
         if vocab_name == "michiyasunaga/BioLinkBERT-large":
